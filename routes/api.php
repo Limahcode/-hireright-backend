@@ -37,7 +37,17 @@ Route::get('/test-log', function () {
     return 'Log test complete.';
 });
 
-
+Route::get('/debug-env', function() {
+    return response()->json([
+        'PORT_env' => env('PORT'),
+        'PORT_server' => $_SERVER['PORT'] ?? 'not set',
+        'all_env' => [
+            'APP_ENV' => env('APP_ENV'),
+            'DB_CONNECTION' => env('DB_CONNECTION'),
+            'DB_HOST' => env('DB_HOST'),
+        ]
+    ]);
+});
 // Auth Routes
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
