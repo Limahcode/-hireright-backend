@@ -1,0 +1,6 @@
+version: 1
+logs:
+  - file_path: /var/app/current/storage/logs/laravel.log
+    log_group_name: /aws/elasticbeanstalk/SundryAgro-App-env-1/laravel
+    log_stream_name: '{instance_id}'
+    datetime_format: '%Y-%m-%d %H:%M:%S'
