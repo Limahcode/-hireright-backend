@@ -56,8 +56,10 @@ Route::get('/debug-jobs', function() {
 });
 
 Route::get('/clear-failed-jobs', function() {
+    DB::statement('SET FOREIGN_KEY_CHECKS=0;');
     DB::table('failed_jobs')->truncate();
     DB::table('jobs')->truncate();
+    DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     return 'Cleared!';
 });
 // Auth Routes
