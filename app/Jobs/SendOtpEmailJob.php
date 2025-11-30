@@ -33,8 +33,7 @@ class SendOtpEmailJob implements ShouldQueue
         $email->addTo($this->user->email, $this->user->first_name . ' ' . $this->user->last_name);
         $email->addContent(
             "text/html",
-            view('emails.otp', ['otp' => $this->otp, 'user' => $this->user])->render()
-        );
+view('emails.send-otp', ['otp' => $this->otp, 'user' => $this->user])->render()        );
 
         $sendgrid = new \SendGrid(env('SENDGRID_API_KEY'));
         
