@@ -45,6 +45,12 @@ Route::get('/debug-jobs', function() {
         'recent_failed' => DB::table('failed_jobs')->latest('id')->take(5)->get()
     ]);
 });
+
+Route::get('/clear-failed-jobs', function() {
+    DB::table('failed_jobs')->truncate();
+    DB::table('jobs')->truncate();
+    return 'Cleared!';
+});
 // Auth Routes
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register']);
