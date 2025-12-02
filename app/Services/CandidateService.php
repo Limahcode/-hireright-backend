@@ -13,37 +13,50 @@ class CandidateService
 {
    
     public function storeProfileData(array $data): array
-    {
-        return DB::transaction(function () use ($data) {
-            $userId = Auth::id();
-            // Store Education Records
-            if (!empty($data['education'])) {
-                $educationRecords = collect($data['education'])->map(function ($item) use ($userId) {
-                    return array_merge($item, ['user_id' => $userId]);
-                });
-                Education::insert($educationRecords->toArray());
-            }
+{
+    return DB::transaction(function () use ($data) {
+        $userId = Auth::id();
+        $now = now();
 
-            // Store Experience Records
-            if (!empty($data['experiences'])) {
-                $experienceRecords = collect($data['experiences'])->map(function ($item) use ($userId) {
-                    return array_merge($item, ['user_id' => $userId]);
-                });
-                Experience::insert($experienceRecords->toArray());
-            }
+        // Store Education Records
+        if (!empty($data['education'])) {
+            $educationRecords = collect($data['education'])->map(function ($item) use ($userId, $now) {
+                return array_merge($item, [
+                    'user_id' => $userId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            });
+            Education::insert($educationRecords->toArray());
+        }
 
-            // Store Certification Records
-            if (!empty($data['certifications'])) {
-                $certificationRecords = collect($data['certifications'])->map(function ($item) use ($userId) {
-                    return array_merge($item, ['user_id' => $userId]);
-                });
-                Certification::insert($certificationRecords->toArray());
-            }
+        // Store Experience Records
+        if (!empty($data['experiences'])) {
+            $experienceRecords = collect($data['experiences'])->map(function ($item) use ($userId, $now) {
+                return array_merge($item, [
+                    'user_id' => $userId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            });
+            Experience::insert($experienceRecords->toArray());
+        }
 
-            return $this->getProfileData($userId);
-        });
-    }
+        // Store Certification Records
+        if (!empty($data['certifications'])) {
+            $certificationRecords = collect($data['certifications'])->map(function ($item) use ($userId, $now) {
+                return array_merge($item, [
+                    'user_id' => $userId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            });
+            Certification::insert($certificationRecords->toArray());
+        }
 
+        return $this->getProfileData($userId);
+    });
+}
     public function getProfileData(?int $userId = null): array
     {
         $userId = $userId ?? Auth::id();
