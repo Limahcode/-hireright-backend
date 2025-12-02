@@ -8,59 +8,59 @@ use App\Models\Experience;
 use App\Models\Certification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage; // ← ADD THIS IMPORT
 
 class CandidateService
 {
-   
     public function storeProfileData(array $data): array
-{
-    return DB::transaction(function () use ($data) {
-        $userId = Auth::id();
-        $now = now();
+    {
+        return DB::transaction(function () use ($data) {
+            $userId = Auth::id();
+            $now = now();
 
-        // Store Education Records
-        if (!empty($data['education'])) {
-            $educationRecords = collect($data['education'])->map(function ($item) use ($userId, $now) {
-                return array_merge($item, [
-                    'user_id' => $userId,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
-            });
-            Education::insert($educationRecords->toArray());
-        }
+            // Store Education Records
+            if (!empty($data['education'])) {
+                $educationRecords = collect($data['education'])->map(function ($item) use ($userId, $now) {
+                    return array_merge($item, [
+                        'user_id' => $userId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                });
+                Education::insert($educationRecords->toArray());
+            }
 
-        // Store Experience Records
-        if (!empty($data['experiences'])) {
-            $experienceRecords = collect($data['experiences'])->map(function ($item) use ($userId, $now) {
-                return array_merge($item, [
-                    'user_id' => $userId,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
-            });
-            Experience::insert($experienceRecords->toArray());
-        }
+            // Store Experience Records
+            if (!empty($data['experiences'])) {
+                $experienceRecords = collect($data['experiences'])->map(function ($item) use ($userId, $now) {
+                    return array_merge($item, [
+                        'user_id' => $userId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                });
+                Experience::insert($experienceRecords->toArray());
+            }
 
-        // Store Certification Records
-        if (!empty($data['certifications'])) {
-            $certificationRecords = collect($data['certifications'])->map(function ($item) use ($userId, $now) {
-                return array_merge($item, [
-                    'user_id' => $userId,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
-            });
-            Certification::insert($certificationRecords->toArray());
-        }
+            // Store Certification Records
+            if (!empty($data['certifications'])) {
+                $certificationRecords = collect($data['certifications'])->map(function ($item) use ($userId, $now) {
+                    return array_merge($item, [
+                        'user_id' => $userId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                });
+                Certification::insert($certificationRecords->toArray());
+            }
 
-        return $this->getProfileData($userId);
-    });
-}
+            return $this->getProfileData($userId);
+        });
+    }  
+
     public function getProfileData(?int $userId = null): array
     {
         $userId = $userId ?? Auth::id();
-
         $user = User::findOrFail($userId);
 
         $education = Education::where('user_id', $userId)
@@ -127,6 +127,12 @@ class CandidateService
                 'address' => $user->address,
                 'bio' => $user->bio,
                 'title' => $user->title,
+                // ADD DOCUMENT URLs
+                'profile_image_url' => $user->profile_image ? Storage::url($user->profile_image) : null,
+                'cover_image_url' => $user->cover_image ? Storage::url($user->cover_image) : null,
+                'resume_url' => $user->resume ? Storage::url($user->resume) : null,
+                'cover_letter_file_url' => $user->cover_letter_file ? Storage::url($user->cover_letter_file) : null,
+                'portfolio_url' => $user->portfolio ? Storage::url($user->portfolio) : null,
             ],
             'education' => $education,
             'experiences' => $experiences,

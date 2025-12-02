@@ -11,6 +11,7 @@ use App\Services\CandidateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage; // ← ADD THIS IMPORT
 use Illuminate\Validation\Rule;
 
 class CandidateController extends Controller
@@ -26,15 +27,10 @@ class CandidateController extends Controller
     {
         try {
             $userId = Auth::id();
-            // $user = User::findOrFail($userId);
-            // Get the total number of jobs the candidate has applied for
             $appliedJobs = JobApplication::where('user_id', $userId)->count();
-            // Get the total number of jobs the candidate has saved
             $savedJobs = SavedJob::where('user_id', $userId)->count();
-            // Get the total number of job alerts for the candidate
             $jobAlerts = JobAlert::where('user_id', $userId)->count();
 
-            // Return the stats as a JSON response
             return response()->json([
                 'status' => 'success',
                 'data' => [
@@ -73,6 +69,15 @@ class CandidateController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
+                // Images
+                'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                
+                // Documents - ADD THESE
+                'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+                'cover_letter_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+                'portfolio' => 'nullable|file|mimes:pdf,doc,docx,zip|max:10240',
+                
                 // Education validation
                 'education' => 'array',
                 'education.*.institution' => 'required|string|max:255',
@@ -113,6 +118,60 @@ class CandidateController extends Controller
                 ], 422);
             }
 
+            // Handle file uploads
+            $userId = Auth::id();
+            $user = User::findOrFail($userId);
+
+            // Handle images
+            if ($request->hasFile('profile_image')) {
+                if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
+                    Storage::disk('public')->delete($user->profile_image);
+                }
+                $path = $request->file('profile_image')->store('profile_images', 'public');
+                $user->profile_image = $path;
+            }
+
+            if ($request->hasFile('cover_image')) {
+                if ($user->cover_image && Storage::disk('public')->exists($user->cover_image)) {
+                    Storage::disk('public')->delete($user->cover_image);
+                }
+                $path = $request->file('cover_image')->store('cover_images', 'public');
+                $user->cover_image = $path;
+            }
+
+            // Handle documents - ADD THESE
+            if ($request->hasFile('resume')) {
+                if ($user->resume && Storage::disk('public')->exists($user->resume)) {
+                    Storage::disk('public')->delete($user->resume);
+                }
+                $path = $request->file('resume')->store('resumes', 'public');
+                $user->resume = $path;
+            }
+
+            if ($request->hasFile('cover_letter_file')) {
+                if ($user->cover_letter_file && Storage::disk('public')->exists($user->cover_letter_file)) {
+                    Storage::disk('public')->delete($user->cover_letter_file);
+                }
+                $path = $request->file('cover_letter_file')->store('cover_letters', 'public');
+                $user->cover_letter_file = $path;
+            }
+
+            if ($request->hasFile('portfolio')) {
+                if ($user->portfolio && Storage::disk('public')->exists($user->portfolio)) {
+                    Storage::disk('public')->delete($user->portfolio);
+                }
+                $path = $request->file('portfolio')->store('portfolios', 'public');
+                $user->portfolio = $path;
+            }
+
+            // Update other user fields
+            $user->bio = $request->bio ?? $user->bio;
+            $user->title = $request->title ?? $user->title;
+            $user->phone = $request->phone ?? $user->phone;
+            $user->address = $request->address ?? $user->address;
+            $user->save();
+
+            // Store profile data
             $profileData = $this->candidateService->storeProfileData($request->all());
 
             return response()->json([
