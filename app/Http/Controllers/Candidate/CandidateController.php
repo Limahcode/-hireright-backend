@@ -73,7 +73,7 @@ class CandidateController extends Controller
                 'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 
-                // Documents - ADD THESE
+                // Documents 
                 'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
                 'cover_letter_file' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
                 'portfolio' => 'nullable|file|mimes:pdf,doc,docx,zip|max:10240',

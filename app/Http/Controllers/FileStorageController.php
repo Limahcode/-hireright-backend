@@ -12,33 +12,24 @@ use Illuminate\Validation\ValidationException;
 class FileStorageController extends Controller
 {
     public function initializeUpload(Request $request, FileStorageService $service)
-    {
+{
+    try {
         // Validate the request data
-        try {
-            $validated = $request->validate([
-                'files' => 'required|array',
-                'files.*.name' => 'required|string',
-                'files.*.type' => 'required|string',
-                'files.*.size' => 'required|integer',
-                'entity_type' => 'required|string',
-                'entity_id' => 'required|integer',
-                'entity_group' => 'nullable|string',
-                'needs_thumbnail' => 'boolean',
-                'metadata' => 'array'
-            ]);
-        } catch (ValidationException $e) {
-            // Return a JSON response with validation errors and a 422 status code
-            return response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => $e->errors(),
-            ], 422);
-        }
+        $validated = $request->validate([
+            'files' => 'required|array',
+            'files.*.name' => 'required|string',
+            'files.*.type' => 'required|string',
+            'files.*.size' => 'required|integer',
+            'entity_type' => 'required|string',
+            'entity_id' => 'required|integer',
+            'entity_group' => 'nullable|string',
+            'needs_thumbnail' => 'boolean',
+            'metadata' => 'array'
+        ]);
 
         $userId = Auth::id();
-        // Re-fetch the user using the User model
         $user = User::findOrFail($userId);
 
-        //
         $uploads = [];
         foreach ($validated['files'] as $fileInfo) {
             $uploads[] = $service->initializeUpload(
@@ -50,9 +41,33 @@ class FileStorageController extends Controller
                 $validated['metadata'] ?? []
             );
         }
-        return response()->json(['uploads' => $uploads]);
+        
+        return response()->json([
+            'status' => 'success',
+            'uploads' => $uploads
+        ], 200);
+        
+    } catch (ValidationException $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        // Log the actual error
+        \Log::error('File upload initialization failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'request' => $request->all()
+        ]);
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'File upload initialization failed',
+            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+        ], 500);
     }
-
+}
     public function confirmUpload(Request $request, FileStorageService $service)
     {
         $groupId = $request->query('groupId');
