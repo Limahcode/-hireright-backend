@@ -111,6 +111,11 @@ class CandidateController extends Controller
             ]);
 
             if ($validator->fails()) {
+                \Log::error('Profile store error', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Validation failed',
