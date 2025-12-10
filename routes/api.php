@@ -165,6 +165,8 @@ Route::middleware(['auth:sanctum', 'can:employer'])->prefix('employers')->group(
     Route::apiResource('jobs', CompanyJobController::class);
     Route::put('jobs/{job}/status', [CompanyJobController::class, 'updateStatus']);
     //
+    Route::post('company/staffs', [CompanyStaffController::class, 'invite']);
+    //
     Route::get('jobs/{jobId}/applications', [JobApplicationController::class, 'getApplicationsForJob']);
     Route::get('jobs/{jobId}/candidates', [JobApplicationController::class, 'getCandidatesForJob']);
     Route::get('company/candidates', [JobApplicationController::class, 'getAllCandidatesForCompany']);
