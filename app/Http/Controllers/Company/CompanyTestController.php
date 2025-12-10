@@ -249,7 +249,7 @@ class CompanyTestController extends Controller
             ], 500);
         }
     }
-// }
+}
 // ```
 
 // ---
