@@ -10,6 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use App\Models\TestQuestion;
+use App\Models\QuestionOption;
+use App\Models\QuestionAttachment;
+use Illuminate\Support\Facades\DB;
 
 class CompanyTestController extends Controller
 {
@@ -249,17 +253,96 @@ class CompanyTestController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Add a question to a test.
+     */
+    public function addQuestion(Request $request, $testId)
+    {
+        try {
+            $userId = Auth::id();
+            $user = User::findOrFail($userId);
+            
+            if (!$user->company_id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Please add a company to your account.',
+                ], 412);
+            }
+
+            $test = Test::where('creator_type', Company::class)
+                ->where('creator_id', $user->company_id)
+                ->findOrFail($testId);
+
+            $validator = Validator::make($request->all(), [
+                'question_text' => 'required|string',
+                'question_type' => ['required', Rule::in(TestQuestion::TYPES)],
+                'points' => 'required|numeric|min:0',
+                'order' => 'nullable|integer|min:0',
+                'settings' => 'nullable|array',
+                'options' => 'nullable|array',
+                'options.*.option_text' => 'required_with:options|string',
+                'options.*.is_correct' => 'nullable|boolean',
+                'options.*.points' => 'nullable|integer|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Get next order number if not provided
+            $order = $request->input('order');
+            if ($order === null) {
+                $order = TestQuestion::where('test_id', $test->id)->max('order') + 1;
+            }
+
+            // Create question
+            $question = TestQuestion::create([
+                'test_id' => $test->id,
+                'question_text' => $request->question_text,
+                'question_type' => $request->question_type,
+                'points' => $request->points,
+                'order' => $order,
+                'settings' => $request->settings,
+            ]);
+
+            // Add options if provided
+            if ($request->has('options') && in_array($request->question_type, ['multiple_choice', 'single_choice'])) {
+                foreach ($request->options as $index => $option) {
+                    QuestionOption::create([
+                        'question_id' => $question->id,
+                        'option_text' => $option['option_text'],
+                        'is_correct' => $option['is_correct'] ?? false,
+                        'points' => $option['points'] ?? 0,
+                        'order' => $index,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            // Load relationships
+            $question->load('options');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Question added successfully',
+                'data' => $question
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to add question',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
 }
-// ```
-
-// ---
-
-// ## 🧪 **TEST IT NOW:**
-
-// **POST** `https://appealing-perception-production.up.railway.app/api/employers/tests`
-
-// **Headers:**
-// ```
-// Authorization: Bearer <employer_token>
-// Accept: application/json
-// Content-Type: application/json

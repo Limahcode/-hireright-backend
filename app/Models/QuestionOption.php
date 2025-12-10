@@ -14,6 +14,8 @@ class QuestionOption extends Model
         'question_id',
         'option_text',
         'is_correct',
+        'points',
+        'order',
     ];
 
     protected $casts = [
@@ -25,6 +27,6 @@ class QuestionOption extends Model
      */
     public function question(): BelongsTo
     {
-        return $this->belongsTo(TestQuestion::class);
+        return $this->belongsTo(TestQuestion::class, 'question_id');
     }
 }

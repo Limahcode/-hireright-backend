@@ -36,4 +36,12 @@ class Test extends Model
     {
         return $this->morphTo();
     }
+
+    /**
+ * Get the questions for this test.
+ */
+public function questions(): HasMany
+{
+    return $this->hasMany(TestQuestion::class)->orderBy('order');
+}
 }
