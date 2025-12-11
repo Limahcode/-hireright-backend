@@ -38,7 +38,7 @@ class CompanyTestController extends Controller
             ->when($request->filled('is_active'), function ($q) use ($request) {
                 $q->where('is_active', $request->boolean('is_active'));
             })
-            ->withCount('questions')  // ← ADD THIS LINE
+            // ->withCount('questions')  // ← ADD THIS LINE
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
 
