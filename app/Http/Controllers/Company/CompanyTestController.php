@@ -346,4 +346,171 @@ class CompanyTestController extends Controller
             ], 500);
         }
     }
+    /**
+ * Add or update options for a question.
+ */
+public function addOptions(Request $request, $testId, $questionId)
+{
+    try {
+        $userId = Auth::id();
+        $user = User::findOrFail($userId);
+        
+        if (!$user->company_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Please add a company to your account.',
+            ], 412);
+        }
+
+        $test = Test::where('creator_type', Company::class)
+            ->where('creator_id', $user->company_id)
+            ->findOrFail($testId);
+
+        $question = TestQuestion::where('test_id', $test->id)
+            ->findOrFail($questionId);
+
+        $validator = Validator::make($request->all(), [
+            'options' => 'required|array|min:1',
+            'options.*.option_text' => 'required|string',
+            'options.*.is_correct' => 'nullable|boolean',
+            'options.*.points' => 'nullable|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        // Delete existing options
+        QuestionOption::where('question_id', $question->id)->delete();
+
+        // Add new options
+        foreach ($request->options as $index => $option) {
+            QuestionOption::create([
+                'question_id' => $question->id,
+                'option_text' => $option['option_text'],
+                'is_correct' => $option['is_correct'] ?? false,
+                'points' => $option['points'] ?? 0,
+                'order' => $index,
+            ]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Options updated successfully',
+            'data' => $question->load('options')
+        ], 200);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to update options',
+            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+        ], 500);
+    }
+}
+
+/**
+ * Update options for a question.
+ */
+/**
+ * Update a question.
+ */
+public function updateQuestion(Request $request, $testId, $questionId)
+{
+    try {
+        $userId = Auth::id();
+        $user = User::findOrFail($userId);
+        
+        if (!$user->company_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Please add a company to your account.',
+            ], 412);
+        }
+
+        $test = Test::where('creator_type', Company::class)
+            ->where('creator_id', $user->company_id)
+            ->findOrFail($testId);
+
+        $question = TestQuestion::where('test_id', $test->id)
+            ->findOrFail($questionId);
+
+        $validator = Validator::make($request->all(), [
+            'question_text' => 'sometimes|required|string',
+            'question_type' => ['sometimes', 'required', Rule::in(TestQuestion::TYPES)],
+            'points' => 'sometimes|required|numeric|min:0',
+            'order' => 'nullable|integer|min:0',
+            'settings' => 'nullable|array',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $question->update($validator->validated());
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Question updated successfully',
+            'data' => $question->load('options')
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to update question',
+            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+        ], 500);
+    }
+}
+
+/**
+ * Remove a question.
+ */
+public function removeQuestion($testId, $questionId)
+{
+    try {
+        $userId = Auth::id();
+        $user = User::findOrFail($userId);
+        
+        if (!$user->company_id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Please add a company to your account.',
+            ], 412);
+        }
+
+        $test = Test::where('creator_type', Company::class)
+            ->where('creator_id', $user->company_id)
+            ->findOrFail($testId);
+
+        $question = TestQuestion::where('test_id', $test->id)
+            ->findOrFail($questionId);
+
+        $question->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Question deleted successfully'
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to delete question',
+            'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+        ], 500);
+    }
+}
 }
