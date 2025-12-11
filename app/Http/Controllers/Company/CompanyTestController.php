@@ -33,13 +33,14 @@ class CompanyTestController extends Controller
                 ], 412);
             }
 
-            $tests = Test::where('creator_type', Company::class)
-                ->where('creator_id', $user->company_id)
-                ->when($request->filled('is_active'), function ($q) use ($request) {
-                    $q->where('is_active', $request->boolean('is_active'));
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate($request->input('per_page', 15));
+        $tests = Test::where('creator_type', Company::class)
+            ->where('creator_id', $user->company_id)
+            ->when($request->filled('is_active'), function ($q) use ($request) {
+                $q->where('is_active', $request->boolean('is_active'));
+            })
+            ->withCount('questions')  // ← ADD THIS LINE
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->input('per_page', 15));
 
             return response()->json([
                 'status' => 'success',
